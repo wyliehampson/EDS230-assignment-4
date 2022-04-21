@@ -1,0 +1,88 @@
+---
+title: "Assignment 4"
+author: "Wylie Hampson"
+date: "4/21/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(pse)
+```
+
+```{r}
+# Source the conductance function that we created.
+source(here("R", "atm_conductance.R"))
+```
+
+```{r}
+# Test to make sure the function is working properly.
+atm_conductance(height = 1000, windspeed = 250)
+```
+
+Here we want to perform sensitivity analysis on `height`, `windspeed`, `k_d`, and `k_0`. `windspeed`, `k_d`, and `k_0` are all normal distributions, and height is a uniform distribution between 9.5 and 10.5 m. 
+
+```{r}
+factors <- c("height", "k_d", "k_0", "windspeed")
+
+nsets <- 100
+
+q <- c("qunif", "qnorm", "qnorm", "qnorm")
+
+q.args <- list(list(min = 950, max = 1050), 
+              list(mean = 0.7, sd = 0.007),
+              list(mean = 0.1, sd = 0.001),
+              list(mean = 250, sd = 30))
+
+```
+
+```{r}
+sens_conductance <- LHS(NULL, factors, nsets, q, q.args)
+sens_pars <- get.data(sens_conductance)
+head(sens_pars)
+```
+
+```{r}
+conductance_values <- atm_conductance(height = sens_pars$height, 
+                                      k_d = sens_pars$k_d,
+                                      k_0 = sens_pars$k_0,
+                                      windspeed = sens_pars$windspeed)
+
+conductance_values
+```
+
+```{r}
+conductance_values <- as.matrix(conductance_values)
+
+sens_conductance <- pse::tell(sens_conductance, 
+                              t(conductance_values),
+                              res.names = "Atmospheric Conductance")
+```
+
+```{r}
+conductance_values <- as.data.frame(conductance_values)
+
+ggplot(conductance_values, aes(y = V1)) + 
+  geom_boxplot() +
+  labs(y = "Atmospheric Conductance")
+```
+
+```{r}
+pse::plotscatter(sens_conductance, col = "blue", cex = 5)
+```
+
+```{r}
+pse::plotprcc(sens_conductance)
+```
+
+```{r}
+sens_conductance$prcc
+```
+
+
+
+
+
+
