@@ -83,6 +83,6 @@ sens_conductance$prcc
 
 **Discuss what your results tell you about how aerodynamic conductance? What does it suggest about what you should focus on if you want to reduce uncertainty in aerodynamic conductance estimates? Does this tell you anything about the sensitivity of plant water use to climate change?**
 
-*Our results suggest to use that all four of the parameters affect atmospheric conductance, but windspeed clearly has the strongest correlation, so that is what should be focused on to reduce uncertainty. This tells us that *
+*Our results suggest to use that all four of the parameters affect atmospheric conductance, but windspeed clearly has the strongest correlation, so that is what should be focused on to reduce uncertainty. This tells us that if climate change does affect weather patterns that change windspeed, it would almost certainly have an affect on atmospheric conductance.*
 
 
