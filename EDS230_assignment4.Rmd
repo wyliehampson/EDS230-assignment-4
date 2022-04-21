@@ -1,6 +1,6 @@
 ---
-title: "Assignment 4"
-author: "Wylie Hampson"
+title: "Assignment 4: LHS Sensitivity Analysis"
+author: "Bri Baker, Wylie Hampson, Shale Hunter"
 date: "4/21/2022"
 output: html_document
 ---
@@ -12,77 +12,125 @@ library(here)
 library(pse)
 ```
 
-```{r}
-# Source the conductance function that we created.
+## Setup
+
+```{r source}
+# Source the conductance function that we created
 source(here("R", "atm_conductance.R"))
 ```
 
-```{r}
-# Test to make sure the function is working properly.
+```{r test}
+# Test to make sure the function is working properly
 atm_conductance(height = 1000, windspeed = 250)
 ```
 
-Here we want to perform sensitivity analysis on `height`, `windspeed`, `k_d`, and `k_0`. `windspeed`, `k_d`, and `k_0` are all normal distributions, and height is a uniform distribution between 9.5 and 10.5 m. 
+## Paramater Sensitivity Analysis
 
-```{r}
+Here we will perform sensitivity analysis on `height`, `windspeed`, `k_d`, and `k_0`. `windspeed`, `k_d`, and `k_0` are all normal distributions, and height is a uniform distribution between 9.5 and 10.5 m. 
+
+```{r param_dist}
+
+# define parameters to test
 factors <- c("height", "k_d", "k_0", "windspeed")
 
+# define sample size
 nsets <- 100
 
-q <- c("qunif", "qnorm", "qnorm", "qnorm")
+# set distributions for parameters above
+q <- c(
+  "qunif", # height
+  "qnorm", # k_d
+  "qnorm", # k _0
+  "qnorm"  # windspeed
+)
 
-q.args <- list(list(min = 950, max = 1050), 
-              list(mean = 0.7, sd = 0.007),
-              list(mean = 0.1, sd = 0.001),
-              list(mean = 250, sd = 30))
+q.args <- list(
+  list(min = 950, max = 1050),  # height
+  list(mean = 0.7, sd = 0.007), # k_d
+  list(mean = 0.1, sd = 0.001), # k_0
+  list(mean = 250, sd = 30)     # windspeed
+)
 
 ```
 
-```{r}
+```{r LHS}
+
+# run LHS and generate samples
 sens_conductance <- LHS(NULL, factors, nsets, q, q.args)
 sens_pars <- get.data(sens_conductance)
 head(sens_pars)
+
 ```
 
-```{r}
+```{r conductance}
+
+# run model for parameters generated
 conductance_values <- atm_conductance(height = sens_pars$height, 
                                       k_d = sens_pars$k_d,
                                       k_0 = sens_pars$k_0,
                                       windspeed = sens_pars$windspeed)
 
 conductance_values
+
 ```
 
-```{r}
+```{r link}
+
+# make output matrix
 conductance_values <- as.matrix(conductance_values)
 
+# link LHS object (sens_conductance) to outputs
 sens_conductance <- pse::tell(sens_conductance, 
                               t(conductance_values),
                               res.names = "Atmospheric Conductance")
 ```
 
-```{r}
+
+## Plot Parameter Sensitivity
+
+
+```{r box}
+
+# make output df
 conductance_values <- as.data.frame(conductance_values)
 
+# plot as boxplot (conductance est + uncertainty)
 ggplot(conductance_values, aes(y = V1)) + 
   geom_boxplot() +
-  labs(y = "Atmospheric Conductance")
+  labs(
+    y = "Atmospheric conductance (cm/s)",
+    title = "Variation in predicted atmospheric conductance outputs",
+    caption = "Conductance values modeled based on \nparameters estimated by LHS analysis."
+    )
+
 ```
 
-```{r}
+```{r scatter}
+
+# plot conductance vs params
 pse::plotscatter(sens_conductance, col = "blue", cex = 5)
+
 ```
 
-```{r}
+```{r prcc}
+
+# estimate partial rank correlation coefficients
 pse::plotprcc(sens_conductance)
+
 ```
 
-```{r}
+```{r prcc_view}
+
+# show prcc for params
 sens_conductance$prcc
+
 ```
 
-**Discuss what your results tell you about how aerodynamic conductance? What does it suggest about what you should focus on if you want to reduce uncertainty in aerodynamic conductance estimates? Does this tell you anything about the sensitivity of plant water use to climate change?**
 
-*Our results suggest to use that all four of the parameters affect atmospheric conductance, but windspeed clearly has the strongest correlation, so that is what should be focused on to reduce uncertainty. This tells us that if climate change does affect weather patterns that change windspeed, it would almost certainly have an affect on atmospheric conductance.*
+## Discussion
+
+Our results suggest that all four parameters (`height`, `windspeed`, `k_d`, and `k_0`) affect atmospheric conductance, but windspeed has the strongest correlation with the output (PRCC = 0.99). Because windspeed has such high correlation with modeled atmospheric conductance, uncertainty in this parameter would lead to less reliable outputs. Thus, efforts to reduce uncertainty in aerodynamic conductance estimated should focus on improving certainty in windspeed measurements.
+
+Plant water conductance is highly sensitive to variation in windspeed which indicates that local weather patterns are important to plant water use. Insofar as climate change can influence local weather (including wind patterns), plant water is sensitive to climate change. However, day to day variation in windspeed drives local plant water use on a finer scale.
 
 
