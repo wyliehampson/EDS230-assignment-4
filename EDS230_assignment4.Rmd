@@ -26,7 +26,7 @@ atm_conductance(height = 1000, windspeed = 250)
 
 ## Paramater Sensitivity Analysis
 
-Here we will perform sensitivity analysis on `height`, `windspeed`, `k_d`, and `k_0`. `windspeed`, `k_d`, and `k_0` are all normal distributions, and height is a uniform distribution between 9.5 and 10.5 m. 
+Here we will perform sensitivity analysis on `height`, `windspeed`, `k_d`, and `k_0`. `windspeed`, `k_d`, and `k_0` are all normal distributions (values are calculated using standard deviations around a mean), and height is a uniform distribution between 9.5 and 10.5 m. 
 
 ```{r param_dist}
 
@@ -101,7 +101,8 @@ ggplot(conductance_values, aes(y = V1)) +
     y = "Atmospheric conductance (cm/s)",
     title = "Variation in predicted atmospheric conductance outputs",
     caption = "Conductance values modeled based on \nparameters estimated by LHS analysis."
-    )
+    ) +
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -129,8 +130,8 @@ sens_conductance$prcc
 
 ## Discussion
 
-Our results suggest that all four parameters (`height`, `windspeed`, `k_d`, and `k_0`) affect atmospheric conductance, but windspeed has the strongest correlation with the output (PRCC = 0.99). Because windspeed has such high correlation with modeled atmospheric conductance, uncertainty in this parameter would lead to less reliable outputs. Thus, efforts to reduce uncertainty in aerodynamic conductance estimated should focus on improving certainty in windspeed measurements.
+Our results suggest that all four parameters (`height`, `windspeed`, `k_d`, and `k_0`) affect atmospheric conductance (all have Partial Rank Correlation Coefficients > 0.60), but within the uncertainty range provided windspeed has the strongest correlation with the output (PRCC = 0.99). Because windspeed has such high correlation with modeled atmospheric conductance, uncertainty in this parameter would lead to less reliable outputs. Thus, efforts to reduce uncertainty in aerodynamic conductance estimated should focus on improving certainty in windspeed measurements.
 
-Plant water conductance is highly sensitive to variation in windspeed which indicates that local weather patterns are important to plant water use. Insofar as climate change can influence local weather (including wind patterns), plant water is sensitive to climate change. However, day to day variation in windspeed drives local plant water use on a finer scale.
+Plant water conductance is highly sensitive to variation in windspeed which indicates that local weather patterns are important to plant water use. Insofar as climate change can influence local weather (including wind patterns), plant water use may be sensitive to climate change. However, day to day variation in windspeed drives local plant water use on a finer scale.
 
 
