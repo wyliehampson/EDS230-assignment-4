@@ -1,0 +1,110 @@
+---
+title: "Sobel Wylie"
+author: "Wylie Hampson"
+date: "4/26/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(sensitivity)
+library(pse)
+library(tidyverse)
+library(gridExtra)
+library(purrr)
+library(ggpubr)
+library(here)
+```
+
+Atmospheric Conductance as a function of windspeed, vegetation height and parameters
+
+```{r}
+# atmcon function
+source(here("R", "atm_conductance.R"))
+```
+
+```{r}
+# generate two examples of random number from parmeter distributions
+np=1000
+
+k_0 = rnorm(mean=0.1,sd=0.1*0.1, n=np)
+k_d = rnorm(mean=0.7, sd=0.7*0.1, n=np)
+windspeed = rnorm(mean=200, sd=10, n=np)
+height = runif(min=9.5, max=10.5, n=np)
+
+X1 = cbind.data.frame(k_0, k_d, windspeed, height=height)
+
+# repeat sampling
+k_0 = rnorm(mean=0.1,sd=0.1*0.1, n=np)
+k_d = rnorm(mean=0.7, sd=0.7*0.1, n=np)
+windspeed = rnorm(mean=200, sd=10, n=np)
+height = runif(min=9.5, max=10.5, n=np)
+
+X2 = cbind.data.frame(k_0, k_d, windspeed, height=height)
+
+# there are different versions of sobol functions that have different approaches for estimating parameters and indices, we use an approach implemented by jansen 
+sens_atm_conductance_Sobol = sobolSalt(model = NULL, X1, X2, nboot = 100)
+
+# Take a look at the Sobol generated sensitivity object
+# your parameters sets for sensitivity analysis are in X
+# run model for all parameter sets
+# make sure you give the parameters names
+parms = as.data.frame(sens_atm_conductance_Sobol$X)
+colnames(parms)= colnames(X1)
+res = pmap_dbl(parms, atm_conductance)
+sens_atm_conductance_Sobol = sensitivity::tell(sens_atm_conductance_Sobol,res, res.names="ga")
+
+# main effect:  partitions variance (main effect without co-variance) - sums approximately to one
+sens_atm_conductance_Sobol$S
+```
+
+```{r}
+# useful to add names - if had to split variance in atmcon, about 73% is associated with height
+# tells how variance can be 
+row.names(sens_atm_conductance_Sobol$S) = colnames(parms)
+sens_atm_conductance_Sobol$S
+```
+
+```{r}
+# total effect - accounts for parameter interactions
+row.names(sens_atm_conductance_Sobol$T) = colnames(parms)
+sens_atm_conductance_Sobol$T
+```
+
+
+```{r}
+# Both the main effect and total effect can tell us something about how the parameter influences results
+print(sens_atm_conductance_Sobol)
+```
+
+```{r}
+# compare with LHS and PRCC; if this is height
+sens_atm_conductance_Sobol$prcc
+```
+
+
+```{r}
+# compare with LHS and PRCC
+sens_atm_conductance_Sobol$S
+```
+
+
+```{r}
+# compare with LHS and PRCC
+sens_atm_conductance_Sobol$T
+```
+
+
+```{r}
+# make a data frame for plotting
+both = cbind.data.frame(parms, gs=sens_atm_conductance_Sobol$y)
+```
+
+
+```{r}
+# look at response of conductance to the two most important variables
+ggplot(both, aes(windspeed,gs, col=height)) +
+  geom_point()+labs(y="Conductance (mm/s)", x="Windspeed")
+```
+
